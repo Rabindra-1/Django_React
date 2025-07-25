@@ -35,7 +35,7 @@ A comprehensive blog application built with Django REST Framework backend and Re
 ### Frontend (React + Javascript)
 
 ✅ **Implemented:**
-- React 19 with TypeScript
+- React 19
 - Material-UI for components
 - TanStack Query for data fetching
 - React Router for navigation

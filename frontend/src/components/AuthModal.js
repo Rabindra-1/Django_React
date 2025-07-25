@@ -22,6 +22,28 @@ const AuthModal = ({ isOpen, onClose, defaultTab = 'login' }) => {
 
   const { login, register } = useAuth();
 
+  // Helper function to format error messages
+  const formatError = (error) => {
+    if (typeof error === 'string') {
+      return error;
+    }
+    
+    if (typeof error === 'object' && error !== null) {
+      // Handle validation errors from backend
+      const errorMessages = [];
+      for (const [field, messages] of Object.entries(error)) {
+        if (Array.isArray(messages)) {
+          errorMessages.push(...messages);
+        } else if (typeof messages === 'string') {
+          errorMessages.push(messages);
+        }
+      }
+      return errorMessages.length > 0 ? errorMessages.join('. ') : 'An error occurred';
+    }
+    
+    return 'An error occurred';
+  };
+
   const handleInputChange = (e) => {
     setFormData({
       ...formData,
@@ -129,7 +151,7 @@ const AuthModal = ({ isOpen, onClose, defaultTab = 'login' }) => {
         {/* Error Message */}
         {error && (
           <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 rounded-md text-sm">
-            {error}
+            {formatError(error)}
           </div>
         )}
 

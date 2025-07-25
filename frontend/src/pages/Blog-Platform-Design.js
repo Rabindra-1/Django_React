@@ -3,16 +3,19 @@
 
 import * as React from 'react';
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useBlogContext } from '../contexts/BlogContext.js';
 import { useBlog } from '../hooks/useBlog.js';
 import { useAIGeneration } from '../hooks/useAIGeneration.js';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDate, getCategoryColor, getCategoryColorDark } from '../utils/helpers.js';
 import { BLOG_CATEGORIES, PAGES, GENERATION_TYPES, SUCCESS_MESSAGES } from '../constants/index.js';
-import AuthModal from '../components/AuthModal';
-import ProfileDropdown from '../components/ProfileDropdown';
 
 const App = () => {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const pageFromUrl = searchParams.get('page') || 'home';
+  
   // Use context and hooks for state management
   const {
     currentPage,
@@ -34,6 +37,11 @@ const App = () => {
   const { posts, loading, error, createPost, likePost } = useBlog();
   const { generateText, generateImage, processYouTubeLink, generateVideo, loading: aiLoading } = useAIGeneration();
   const { user } = useAuth();
+  
+  // Update current page based on URL params
+  React.useEffect(() => {
+    setCurrentPage(pageFromUrl);
+  }, [pageFromUrl, setCurrentPage]);
 
   // Enhanced form submission with API integration
   const handleFormSubmit = async (e) => {
@@ -63,62 +71,6 @@ const App = () => {
     );
   }
 
-  const renderNavigation = () => (
-    <nav className={`${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'} border-b transition-colors duration-300`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-8">
-            <div className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              Rawan
-            </div>
-            <div className="flex space-x-6">
-              <button
-                onClick={() => setCurrentPage('home')}
-                className={`px-3 py-2 text-sm font-medium transition-colors duration-200 cursor-pointer whitespace-nowrap !rounded-button ${
-                  currentPage === 'home' || currentPage === 'post-detail'
-                    ? isDarkMode ? 'text-blue-400 border-b-2 border-blue-400' : 'text-blue-600 border-b-2 border-blue-600'
-                    : isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-gray-900'
-                }`}
-              >
-                Home
-              </button>
-              <button
-                onClick={() => setCurrentPage('write')}
-                className={`px-3 py-2 text-sm font-medium transition-colors duration-200 cursor-pointer whitespace-nowrap !rounded-button ${
-                  currentPage === 'write'
-                    ? isDarkMode ? 'text-blue-400 border-b-2 border-blue-400' : 'text-blue-600 border-b-2 border-blue-600'
-                    : isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-gray-900'
-                }`}
-              >
-                Write
-              </button>
-              <button
-                onClick={() => setCurrentPage('generate')}
-                className={`px-3 py-2 text-sm font-medium transition-colors duration-200 cursor-pointer whitespace-nowrap !rounded-button ${
-                  currentPage === 'generate'
-                    ? isDarkMode ? 'text-blue-400 border-b-2 border-blue-400' : 'text-blue-600 border-b-2 border-blue-600'
-                    : isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-gray-900'
-                }`}
-              >
-                Generate
-              </button>
-            </div>
-          </div>
-          <button
-            onClick={toggleTheme}
-            className={`p-2 rounded-lg transition-all duration-300 cursor-pointer !rounded-button ${
-              isDarkMode 
-                ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            <i className={`fas ${isDarkMode ? 'fa-sun' : 'fa-moon'} text-lg`}></i>
-          </button>
-
-        </div>
-      </div>
-    </nav>
-  );
 
   const renderHomePage = () => (
     <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} transition-colors duration-300`}>
@@ -656,36 +608,11 @@ const App = () => {
   );
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} transition-colors duration-300`}>
-      <style>{`
-        .!rounded-button {
-          border-radius: 0.5rem;
-        }
-        
-        input[type="number"]::-webkit-outer-spin-button,
-        input[type="number"]::-webkit-inner-spin-button {
-          -webkit-appearance: none;
-          margin: 0;
-        }
-        
-        input[type="number"] {
-          -moz-appearance: textfield;
-        }
-        
-        .dark {
-          color-scheme: dark;
-        }
-      `}</style>
-      
-      {renderNavigation()}
-      
-      <main className="min-h-screen">
-        {currentPage === 'home' && renderHomePage()}
-        {currentPage === 'post-detail' && renderPostDetail()}
-        {currentPage === 'write' && renderWritePage()}
-        {currentPage === 'generate' && renderGeneratePage()}
-      </main>
-      
+    <div className={`${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} transition-colors duration-300`}>
+      {currentPage === 'home' && renderHomePage()}
+      {currentPage === 'post-detail' && renderPostDetail()}
+      {currentPage === 'write' && renderWritePage()}
+      {currentPage === 'generate' && renderGeneratePage()}
       {renderFooter()}
     </div>
   );

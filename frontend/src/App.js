@@ -1,5 +1,8 @@
 import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import BlogPlatformDesign from './pages/Blog-Platform-Design.js';
+import ProfilePage from './pages/ProfilePage.js';
+import Layout from './components/Layout.js';
 import { AuthProvider } from './contexts/AuthContext';
 import { CustomThemeProvider } from './contexts/ThemeContext';
 import { BlogProvider } from './contexts/BlogContext.js';
@@ -23,7 +26,14 @@ function App() {
       <AuthProvider>
         <CustomThemeProvider>
           <BlogProvider>
-            <BlogPlatformDesign />
+            <Router>
+              <Layout>
+                <Routes>
+                  <Route path="/" element={<BlogPlatformDesign />} />
+                  <Route path="/profile" element={<ProfilePage />} />
+                </Routes>
+              </Layout>
+            </Router>
           </BlogProvider>
         </CustomThemeProvider>
       </AuthProvider>

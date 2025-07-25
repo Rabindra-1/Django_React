@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUserProfile = async () => {
     try {
-      const response = await api.get('/accounts/profile/');
+      const response = await api.get('/auth/profile/');
       setUser(response.data);
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
@@ -39,7 +39,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await api.post('/accounts/login/', {
+      const response = await api.post('/auth/login/', {
         email,
         password,
       });
@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      const response = await api.post('/accounts/register/', userData);
+      const response = await api.post('/auth/register/', userData);
       return { success: true, data: response.data };
     } catch (error) {
       return {
