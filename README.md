@@ -32,7 +32,7 @@ A comprehensive blog application built with Django REST Framework backend and Re
 - `/api/blogs/generate/` - AI content generation
 - `/api/blogs/generate-from-video/` - Video transcription
 
-### Frontend (React + TypeScript)
+### Frontend (React + Javascript)
 
 ✅ **Implemented:**
 - React 19 with TypeScript
