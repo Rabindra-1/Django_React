@@ -14,12 +14,13 @@ import tempfile
 import os
 from urllib.parse import parse_qs, urlparse
 
-from .models import Blog, BlogLike, BlogBookmark, Tag
+from .models import Blog, BlogLike, BlogBookmark, Tag, Category
 from .serializers import (
     BlogListSerializer,
     BlogDetailSerializer,
     BlogCreateUpdateSerializer,
-    TagSerializer
+    TagSerializer,
+    CategorySerializer
 )
 
 # Set OpenAI API key
@@ -234,4 +235,10 @@ def generate_blog_from_video(request):
 def tags(request):
     tags = Tag.objects.all().order_by('name')
     serializer = TagSerializer(tags, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def categories(request):
+    categories = Category.objects.all().order_by('name')
+    serializer = CategorySerializer(categories, many=True)
     return Response(serializer.data)

@@ -11,4 +11,5 @@ urlpatterns = [
     path('generate/', views.generate_blog_content, name='generate_blog_content'),
     path('generate-from-video/', views.generate_blog_from_video, name='generate_blog_from_video'),
     path('tags/', views.tags, name='tags'),
+    path('categories/', views.categories, name='categories'),
 ]

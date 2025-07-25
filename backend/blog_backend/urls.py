@@ -24,6 +24,7 @@ urlpatterns = [
     path('api/auth/', include('accounts.urls')),
     path('api/blogs/', include('blogs.urls')),
     path('api/comments/', include('comments.urls')),
+    path('api/ai/', include('ai_generation.urls')),
 ]
 
 # Serve media files in development

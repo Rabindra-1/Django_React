@@ -1,24 +1,33 @@
-import logo from './logo.svg';
+import React from 'react';
+import BlogPlatformDesign from './pages/Blog-Platform-Design.js';
+import { AuthProvider } from './contexts/AuthContext';
+import { CustomThemeProvider } from './contexts/ThemeContext';
+import { BlogProvider } from './contexts/BlogContext.js';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './App.css';
+
+// Create a client for React Query
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      cacheTime: 10 * 60 * 1000, // 10 minutes
+    },
+  },
+});
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <CustomThemeProvider>
+          <BlogProvider>
+            <BlogPlatformDesign />
+          </BlogProvider>
+        </CustomThemeProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 

@@ -1,6 +1,11 @@
 from rest_framework import serializers
-from .models import Blog, Tag, BlogImage, BlogLike, BlogBookmark
+from .models import Blog, Tag, BlogImage, BlogLike, BlogBookmark, Category
 from accounts.serializers import UserSerializer
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'slug', 'description', 'color']
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
@@ -14,6 +19,7 @@ class BlogImageSerializer(serializers.ModelSerializer):
 
 class BlogListSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
+    category = CategorySerializer(read_only=True)
     tags = TagSerializer(many=True, read_only=True)
     is_liked = serializers.SerializerMethodField()
     is_bookmarked = serializers.SerializerMethodField()
@@ -22,7 +28,7 @@ class BlogListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Blog
         fields = [
-            'id', 'title', 'slug', 'content', 'author', 'tags', 
+            'id', 'title', 'slug', 'content', 'author', 'category', 'tags', 
             'layout_type', 'featured_image', 'created_at', 'updated_at',
             'likes_count', 'views_count', 'is_liked', 'is_bookmarked', 'comments_count'
         ]
@@ -44,6 +50,7 @@ class BlogListSerializer(serializers.ModelSerializer):
 
 class BlogDetailSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
+    category = CategorySerializer(read_only=True)
     tags = TagSerializer(many=True, read_only=True)
     images = BlogImageSerializer(many=True, read_only=True)
     is_liked = serializers.SerializerMethodField()
@@ -53,7 +60,7 @@ class BlogDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Blog
         fields = [
-            'id', 'title', 'slug', 'content', 'author', 'tags', 
+            'id', 'title', 'slug', 'content', 'author', 'category', 'tags', 
             'layout_type', 'featured_image', 'images', 'created_at', 'updated_at',
             'likes_count', 'views_count', 'is_liked', 'is_bookmarked', 'comments_count'
         ]
@@ -83,7 +90,7 @@ class BlogCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Blog
         fields = [
-            'title', 'content', 'layout_type', 'featured_image', 'tags', 'is_published'
+            'title', 'content', 'category', 'layout_type', 'featured_image', 'tags', 'is_published'
         ]
     
     def create(self, validated_data):
