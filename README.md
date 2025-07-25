@@ -1,6 +1,6 @@
 # Full-Stack Blog Application
 
-A comprehensive blog application built with Django REST Framework backend and React TypeScript frontend.
+A comprehensive blog application built with Django REST Framework backend and React javascript frontend.
 
 ## Features
 
