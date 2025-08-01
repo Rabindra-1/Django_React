@@ -86,6 +86,7 @@ class BlogCreateUpdateSerializer(serializers.ModelSerializer):
         write_only=True,
         required=False
     )
+    category = serializers.CharField(write_only=True, required=False)
     
     class Meta:
         model = Blog
@@ -95,6 +96,17 @@ class BlogCreateUpdateSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         tags_data = validated_data.pop('tags', [])
+        category_name = validated_data.pop('category', None)
+        
+        # Handle category - create if it doesn't exist
+        if category_name:
+            from .models import Category
+            category, created = Category.objects.get_or_create(
+                name=category_name.title(),
+                defaults={'description': f'{category_name.title()} category'}
+            )
+            validated_data['category'] = category
+        
         blog = Blog.objects.create(**validated_data)
         
         # Handle tags
@@ -106,6 +118,16 @@ class BlogCreateUpdateSerializer(serializers.ModelSerializer):
     
     def update(self, instance, validated_data):
         tags_data = validated_data.pop('tags', None)
+        category_name = validated_data.pop('category', None)
+        
+        # Handle category - create if it doesn't exist
+        if category_name:
+            from .models import Category
+            category, created = Category.objects.get_or_create(
+                name=category_name.title(),
+                defaults={'description': f'{category_name.title()} category'}
+            )
+            validated_data['category'] = category
         
         # Update blog fields
         for attr, value in validated_data.items():

@@ -3,15 +3,19 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.conf import settings
-import openai
+from django.core.files.storage import default_storage
+from openai import OpenAI
 import time
 import requests
 import os
+import base64
+from PIL import Image
+from io import BytesIO
 from .models import GeneratedContent, ImageGeneration
 from .serializers import GeneratedContentSerializer, ImageGenerationSerializer
 
-# Set OpenAI API key
-openai.api_key = settings.OPENAI_API_KEY
+# Initialize OpenAI client
+client = OpenAI(api_key=settings.OPENAI_API_KEY) if settings.OPENAI_API_KEY else None
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -21,16 +25,16 @@ def generate_text(request):
     if not prompt:
         return Response({'error': 'Prompt is required'}, status=status.HTTP_400_BAD_REQUEST)
     
-    if not settings.OPENAI_API_KEY:
+    if not client:
         return Response({'error': 'OpenAI API key not configured'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     start_time = time.time()
     
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "You are a helpful assistant that creates engaging content. Be creative and informative."},
+                {"role": "system", "content": "You are a helpful assistant that creates engaging blog content. Be creative, informative, and format your response well with headings and paragraphs."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=1500,

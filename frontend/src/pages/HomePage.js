@@ -176,8 +176,8 @@ const HomePage = () => {
               >
                 <MenuItem value="">All Categories</MenuItem>
                 {categories.map((category) => (
-                  <MenuItem key={category.id} value={category.name}>
-                    {category.name}
+                  <MenuItem key={category.id} value={typeof category === 'object' ? category.name : category}>
+                    {typeof category === 'object' ? category.name : category}
                   </MenuItem>
                 ))}
               </Select>

@@ -10,6 +10,8 @@ import { useAIGeneration } from '../hooks/useAIGeneration.js';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDate, getCategoryColor, getCategoryColorDark } from '../utils/helpers.js';
 import { BLOG_CATEGORIES, PAGES, GENERATION_TYPES, SUCCESS_MESSAGES } from '../constants/index.js';
+import VideoToBlogConverter from '../components/VideoToBlogConverter.js';
+import ImageToBlogConverter from '../components/ImageToBlogConverter.js';
 
 const App = () => {
   const location = useLocation();
@@ -46,13 +48,48 @@ const App = () => {
   // Enhanced form submission with API integration
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    const result = await createPost(blogForm);
+    
+    // Check if user is authenticated
+    if (!user) {
+      alert('Please log in to create a blog post');
+      return;
+    }
+    
+    // Validate form data
+    if (!blogForm.title || !blogForm.content) {
+      alert('Please fill in both title and content');
+      return;
+    }
+    
+    console.log('Submitting blog data:', {
+      title: blogForm.title,
+      content: blogForm.content,
+      category: blogForm.category,
+      user: user.username
+    });
+    
+    // Prepare the blog data with all required fields
+    const blogData = {
+      title: blogForm.title,
+      content: blogForm.content,
+      category: blogForm.category,
+      layout_type: 'minimal', // Valid layout type from Blog model
+      is_published: true, // Set to published when submitting
+      tags: [] // Empty tags array for now
+    };
+    
+    const result = await createPost(blogData);
+    
+    console.log('Blog creation result:', result);
     
     if (result.success) {
       resetForm();
-      alert(SUCCESS_MESSAGES.POST_CREATED);
+      alert('Blog post created successfully! You can view it on the Home page.');
+      // Navigate to home page to see the new post
+      setCurrentPage('home');
     } else {
-      alert(result.error || 'Failed to create post');
+      console.error('Blog creation failed:', result.error);
+      alert(`Failed to create post: ${result.error}`);
     }
   };
 
@@ -98,15 +135,15 @@ const App = () => {
                   </h2>
                   <div className="flex items-center space-x-4 text-sm">
                     <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                      By {post.author}
+                      By {typeof post.author === 'object' ? post.author?.username || post.author?.email || 'Unknown Author' : post.author}
                     </span>
                     <span className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {post.date}
+                      {post.date || (post.created_at ? new Date(post.created_at).toLocaleDateString() : 'Unknown Date')}
                     </span>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       isDarkMode ? 'bg-blue-900 text-blue-300' : 'bg-blue-100 text-blue-800'
                     }`}>
-                      {post.category}
+                      {typeof post.category === 'object' ? post.category?.name || 'Uncategorized' : post.category}
                     </span>
                   </div>
                 </div>
@@ -166,15 +203,15 @@ const App = () => {
               </h1>
               <div className="flex items-center space-x-4 text-sm">
                 <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  By {selectedPost.author}
+                  By {typeof selectedPost.author === 'object' ? selectedPost.author?.username || selectedPost.author?.email || 'Unknown Author' : selectedPost.author}
                 </span>
                 <span className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {selectedPost.date}
+                  {selectedPost.date || (selectedPost.created_at ? new Date(selectedPost.created_at).toLocaleDateString() : 'Unknown Date')}
                 </span>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                   isDarkMode ? 'bg-blue-900 text-blue-300' : 'bg-blue-100 text-blue-800'
                 }`}>
-                  {selectedPost.category}
+                  {typeof selectedPost.category === 'object' ? selectedPost.category?.name || 'Uncategorized' : selectedPost.category}
                 </span>
               </div>
             </header>
@@ -415,104 +452,11 @@ const App = () => {
         )}
 
         {currentSubPage === 'video' && (
-          <div>
-            <h1 className={`text-4xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              Video Generator
-            </h1>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border p-6 transition-colors duration-300`}>
-                <h3 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Video Settings
-                </h3>
-                <div className="space-y-4">
-                  <input
-                    type="text"
-                    placeholder="Video title..."
-                    className={`w-full px-4 py-3 rounded-lg border transition-colors duration-200 text-sm ${
-                      isDarkMode 
-                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                    } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  />
-                  <textarea
-                    placeholder="Video description..."
-                    className={`w-full h-24 px-4 py-3 rounded-lg border transition-colors duration-200 text-sm resize-none ${
-                      isDarkMode 
-                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                    } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  />
-                  <button className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 cursor-pointer whitespace-nowrap !rounded-button">
-                    <i className="fas fa-video mr-2"></i>
-                    Generate Video
-                  </button>
-                </div>
-              </div>
-              <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border p-6 transition-colors duration-300`}>
-                <h3 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Preview
-                </h3>
-                <div className={`aspect-video rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} flex items-center justify-center`}>
-                  <i className={`fas fa-play-circle text-6xl ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}></i>
-                </div>
-              </div>
-            </div>
-          </div>
+          <VideoToBlogConverter isDarkMode={isDarkMode} />
         )}
 
         {currentSubPage === 'image' && (
-          <div>
-            <h1 className={`text-4xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              AI Image Generator
-            </h1>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border p-6 transition-colors duration-300`}>
-                <h3 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Image Prompt
-                </h3>
-                <textarea
-                  placeholder="Describe the image you want to generate..."
-                  className={`w-full h-32 px-4 py-3 rounded-lg border transition-colors duration-200 text-sm resize-none ${
-                    isDarkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                />
-                <div className="mt-4 space-y-2">
-                  <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    Style
-                  </label>
-                  <div className="relative">
-                    <select className={`w-full px-4 py-2 rounded-lg border transition-colors duration-200 text-sm cursor-pointer appearance-none ${
-                      isDarkMode 
-                        ? 'bg-gray-700 border-gray-600 text-white' 
-                        : 'bg-white border-gray-300 text-gray-900'
-                    } focus:outline-none focus:ring-2 focus:ring-blue-500`}>
-                      <option>Realistic</option>
-                      <option>Artistic</option>
-                      <option>Cartoon</option>
-                      <option>Abstract</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <i className={`fas fa-chevron-down ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}></i>
-                    </div>
-                  </div>
-                </div>
-                <button className="mt-4 w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 cursor-pointer whitespace-nowrap !rounded-button">
-                  <i className="fas fa-image mr-2"></i>
-                  Generate Image
-                </button>
-              </div>
-              <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border p-6 transition-colors duration-300`}>
-                <h3 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Generated Image
-                </h3>
-                <div className={`aspect-square rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} flex items-center justify-center`}>
-                  <i className={`fas fa-image text-6xl ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}></i>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ImageToBlogConverter isDarkMode={isDarkMode} />
         )}
       </div>
     </div>

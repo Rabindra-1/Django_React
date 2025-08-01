@@ -47,11 +47,49 @@ export const useBlog = () => {
     }
   ];
 
+  const transformApiPost = (apiPost) => {
+    // Transform API post to frontend format
+    const content = apiPost.content || '';
+    const shortContent = content.length > 150 
+      ? content.substring(0, 150) + '...' 
+      : content;
+    
+    return {
+      id: apiPost.id,
+      title: apiPost.title,
+      author: typeof apiPost.author === 'object' 
+        ? apiPost.author.username || apiPost.author.email || 'Unknown Author'
+        : apiPost.author,
+      date: apiPost.created_at ? new Date(apiPost.created_at).toLocaleDateString() : 'Unknown Date',
+      category: typeof apiPost.category === 'object' 
+        ? apiPost.category.name?.toLowerCase() || 'uncategorized'
+        : apiPost.category,
+      shortContent,
+      fullContent: content,
+      likes: apiPost.likes_count || 0,
+      comments: apiPost.comments_count || 0,
+      created_at: apiPost.created_at,
+      slug: apiPost.slug,
+      layout_type: apiPost.layout_type,
+      featured_image: apiPost.featured_image,
+      tags: apiPost.tags || [],
+      is_liked: apiPost.is_liked || false,
+      is_bookmarked: apiPost.is_bookmarked || false
+    };
+  };
+
   const fetchPosts = async () => {
     try {
       setLoading(true);
       const response = await api.get('/blogs/');
-      setPosts(response.data.results || response.data);
+      const apiPosts = response.data.results || response.data;
+      
+      // Transform API posts to frontend format
+      const transformedPosts = Array.isArray(apiPosts) 
+        ? apiPosts.map(transformApiPost)
+        : [];
+      
+      setPosts(transformedPosts);
       setError(null);
     } catch (err) {
       console.warn('Failed to fetch posts from API, using sample data:', err);
@@ -70,12 +108,25 @@ export const useBlog = () => {
   const createPost = async (postData) => {
     try {
       const response = await api.post('/blogs/', postData);
-      setPosts(prev => [response.data, ...prev]);
+      
+      // Transform the new post and add it to the top of the list
+      const transformedPost = transformApiPost(response.data);
+      setPosts(prev => [transformedPost, ...prev]);
+      
+      // Also refresh the entire list to ensure consistency
+      await fetchPosts();
+      
       return { success: true };
     } catch (err) {
+      console.error('Error creating post:', err);
+      const errorMessage = err.response?.data?.detail 
+        || err.response?.data?.message 
+        || err.response?.data?.error
+        || 'Failed to create post';
+      
       return {
         success: false,
-        error: err.response?.data?.detail || 'Failed to create post'
+        error: errorMessage
       };
     }
   };

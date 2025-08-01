@@ -12,9 +12,10 @@ import { useAuth } from '../contexts/AuthContext';
 const AuthModal = ({ isOpen, onClose, defaultTab = 'login' }) => {
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [formData, setFormData] = useState({
-    email: '',
+    usernameOrEmail: '',
     password: '',
     username: '',
+    email: '',
     confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
@@ -58,10 +59,10 @@ const AuthModal = ({ isOpen, onClose, defaultTab = 'login' }) => {
     setError('');
 
     try {
-      const result = await login(formData.email, formData.password);
+      const result = await login(formData.usernameOrEmail, formData.password);
       if (result.success) {
         onClose();
-        setFormData({ email: '', password: '', username: '', confirmPassword: '' });
+        setFormData({ usernameOrEmail: '', password: '', username: '', email: '', confirmPassword: '' });
       } else {
         setError(result.error || 'Login failed');
       }
@@ -87,7 +88,8 @@ const AuthModal = ({ isOpen, onClose, defaultTab = 'login' }) => {
       const result = await register({
         username: formData.username,
         email: formData.email,
-        password: formData.password
+        password: formData.password,
+        password_confirm: formData.confirmPassword
       });
       
       if (result.success) {
@@ -95,7 +97,7 @@ const AuthModal = ({ isOpen, onClose, defaultTab = 'login' }) => {
         setActiveTab('login');
         setError('');
         alert('Registration successful! Please log in.');
-        setFormData({ email: formData.email, password: '', username: '', confirmPassword: '' });
+        setFormData({ usernameOrEmail: formData.email, password: '', username: '', email: '', confirmPassword: '' });
       } else {
         setError(result.error || 'Registration failed');
       }
@@ -160,16 +162,16 @@ const AuthModal = ({ isOpen, onClose, defaultTab = 'login' }) => {
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Email
+                Username or Email
               </label>
               <input
-                type="email"
-                name="email"
-                value={formData.email}
+                type="text"
+                name="usernameOrEmail"
+                value={formData.usernameOrEmail}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
-                placeholder="Enter your email"
+                placeholder="Enter your username or email"
               />
             </div>
             <div>

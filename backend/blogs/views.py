@@ -6,10 +6,9 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.db.models import Q, F
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-import openai
+from openai import OpenAI
 from django.conf import settings
 import requests
-import whisper
 import tempfile
 import os
 from urllib.parse import parse_qs, urlparse
@@ -23,8 +22,8 @@ from .serializers import (
     CategorySerializer
 )
 
-# Set OpenAI API key
-openai.api_key = settings.OPENAI_API_KEY
+# Initialize OpenAI client
+client = OpenAI(api_key=settings.OPENAI_API_KEY) if settings.OPENAI_API_KEY else None
 
 class BlogListCreateView(generics.ListCreateAPIView):
     queryset = Blog.objects.filter(is_published=True)
@@ -121,11 +120,11 @@ def generate_blog_content(request):
     if not prompt:
         return Response({'error': 'Prompt is required'}, status=status.HTTP_400_BAD_REQUEST)
     
-    if not settings.OPENAI_API_KEY:
+    if not client:
         return Response({'error': 'OpenAI API key not configured'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant that writes engaging blog posts. Create well-structured, informative content with a clear introduction, main points, and conclusion."},
