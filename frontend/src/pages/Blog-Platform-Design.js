@@ -54,6 +54,12 @@ const App = () => {
   const [currentBlogId, setCurrentBlogId] = useState(null);
   const [showMediaUploader, setShowMediaUploader] = useState(false);
   
+  // Write page state (moved from renderWritePage to fix hooks violation)
+  const [featuredImageFile, setFeaturedImageFile] = useState(null);
+  const [featuredImagePreview, setFeaturedImagePreview] = useState(null);
+  const [additionalMediaEnabled, setAdditionalMediaEnabled] = useState(false);
+  const featuredImageInputRef = useRef(null);
+  
   // Debug logging for modal state
   React.useEffect(() => {
     console.log('Modal state changed:', { 
@@ -382,10 +388,6 @@ const App = () => {
   );
 
   const renderWritePage = () => {
-    const [featuredImageFile, setFeaturedImageFile] = useState(null);
-    const [featuredImagePreview, setFeaturedImagePreview] = useState(null);
-    const [additionalMediaEnabled, setAdditionalMediaEnabled] = useState(false);
-    const featuredImageInputRef = useRef(null);
 
     const handleFeaturedImageSelect = (e) => {
       const file = e.target.files[0];

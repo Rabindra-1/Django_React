@@ -206,8 +206,17 @@ export const aiAPI = {
   generateText: (prompt) => 
     api.post('/ai/text/', { prompt }),
   
-  generateImage: (prompt, style = 'realistic') => 
-    api.post('/ai/image/', { prompt, style }),
+  analyzeImage: (imageFile, analysisType = 'description') => {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    formData.append('analysis_type', analysisType);
+    return api.post('/ai/image/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  
+  analyzeImageFromUrl: (imageUrl, analysisType = 'description') => 
+    api.post('/ai/image/', { image_url: imageUrl, analysis_type: analysisType }),
   
   processYouTube: (youtubeUrl) => 
     api.post('/ai/youtube/', { youtube_url: youtubeUrl }),

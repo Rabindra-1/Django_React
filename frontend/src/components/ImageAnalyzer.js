@@ -3,7 +3,7 @@ import { Eye, Copy, Trash2, Lightbulb, Loader2, Upload } from 'lucide-react';
 import { aiAPI } from '../services/api';
 import { useBlogContext } from '../contexts/BlogContext';
 
-const ImageAnalyzerTab = () => {
+const ImageAnalyzer = () => {
   const { isDarkMode } = useBlogContext();
   const [selectedImage, setSelectedImage] = useState(null);
   const [analysisType, setAnalysisType] = useState('description');
@@ -308,4 +308,4 @@ const ImageAnalyzerTab = () => {
   );
 };
 
-export default ImageAnalyzerTab;
+export default ImageAnalyzer;

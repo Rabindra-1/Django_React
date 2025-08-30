@@ -10,7 +10,7 @@ import { Wand2, PenLine } from 'lucide-react';
 const HomePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isDarkMode, fetchBlogs, likePost, bookmarkPost } = useBlogContext();
+  const { isDarkMode, likePost, bookmarkPost } = useBlogContext();
   
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +30,7 @@ const HomePage = () => {
 
   useEffect(() => {
     loadBlogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, currentPage]);
 
   const loadBlogs = async () => {
@@ -49,7 +50,7 @@ const HomePage = () => {
         ...(filters.dateTo && { created_at__lte: filters.dateTo }),
       };
 
-      const response = await blogAPI.getAllBlogs(params);
+      const response = await blogAPI.getBlogs(params);
       setBlogs(response.data.results || response.data);
       
       if (response.data.count) {
@@ -113,6 +114,10 @@ const HomePage = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleBlogClick = (blog) => {
+    navigate(`/blog/${blog.slug}`);
+  };
+
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -173,9 +178,7 @@ const HomePage = () => {
           </div>
         ) : (
           <BlogList 
-            blogs={blogs} 
-            onLike={handleLike} 
-            onBookmark={handleBookmark} 
+            onBlogClick={handleBlogClick}
           />
         )}
 

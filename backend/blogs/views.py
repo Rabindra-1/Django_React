@@ -233,12 +233,14 @@ def generate_blog_from_video(request):
         return Response({'error': f'Error processing video: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
+@permission_classes([])
 def tags(request):
     tags = Tag.objects.all().order_by('name')
     serializer = TagSerializer(tags, many=True)
     return Response(serializer.data)
 
 @api_view(['GET'])
+@permission_classes([])
 def categories(request):
     categories = Category.objects.all().order_by('name')
     serializer = CategorySerializer(categories, many=True)

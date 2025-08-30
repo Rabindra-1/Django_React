@@ -3,7 +3,7 @@ import { Search, Filter, X, Calendar, User, Tag, Hash } from 'lucide-react';
 import { useBlogContext } from '../contexts/BlogContext';
 
 const SearchFilters = ({ onFiltersChange, initialFilters = {} }) => {
-  const { isDarkMode, categories, tags, fetchCategoriesAndTags } = useBlogContext();
+  const { isDarkMode, categories, tags, fetchCategories, fetchTags } = useBlogContext();
   const [isExpanded, setIsExpanded] = useState(false);
   const [filters, setFilters] = useState({
     search: '',
@@ -18,8 +18,9 @@ const SearchFilters = ({ onFiltersChange, initialFilters = {} }) => {
   });
 
   useEffect(() => {
-    fetchCategoriesAndTags();
-  }, [fetchCategoriesAndTags]);
+    fetchCategories();
+    fetchTags();
+  }, [fetchCategories, fetchTags]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {

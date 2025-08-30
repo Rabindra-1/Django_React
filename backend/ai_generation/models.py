@@ -27,20 +27,21 @@ class GeneratedContent(models.Model):
         return f"{self.user.username} - {self.content_type} - {self.created_at}"
 
 class ImageGeneration(models.Model):
-    STYLE_CHOICES = [
-        ('realistic', 'Realistic'),
-        ('artistic', 'Artistic'),
-        ('cartoon', 'Cartoon'),
-        ('abstract', 'Abstract'),
+    ANALYSIS_CHOICES = [
+        ('description', 'General Description'),
+        ('detailed', 'Detailed Analysis'),
+        ('caption', 'Caption'),
+        ('ocr', 'Text Extraction (OCR)'),
     ]
     
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='generated_images')
-    prompt = models.TextField()
-    style = models.CharField(max_length=20, choices=STYLE_CHOICES, default='realistic')
-    image_url = models.URLField(blank=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='image_analyses')
+    uploaded_image = models.ImageField(upload_to='uploaded_images/', null=True, blank=True)
+    image_url = models.URLField(blank=True, help_text="URL of image to analyze (if not uploading file)")
+    analysis_type = models.CharField(max_length=20, choices=ANALYSIS_CHOICES, default='description')
+    generated_text = models.TextField(blank=True, help_text="AI-generated description of the image")
     local_path = models.CharField(max_length=500, blank=True)
-    width = models.PositiveIntegerField(default=1024)
-    height = models.PositiveIntegerField(default=1024)
+    width = models.PositiveIntegerField(null=True, blank=True)
+    height = models.PositiveIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     success = models.BooleanField(default=True)
     error_message = models.TextField(blank=True)
@@ -49,4 +50,4 @@ class ImageGeneration(models.Model):
         ordering = ['-created_at']
     
     def __str__(self):
-        return f"Image by {self.user.username} - {self.prompt[:50]}"
+        return f"Image analysis by {self.user.username} - {self.analysis_type}"

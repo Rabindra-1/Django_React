@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { blogAPI, commentAPI, aiAPI } from '../services/api';
+import { blogAPI } from '../services/api';
 import { useAuth } from './AuthContext';
 
 const BlogContext = createContext(undefined);
@@ -23,7 +23,7 @@ export const useBlogContext = () => {
  * @returns {React.Component} BlogProvider component
  */
 export const BlogProvider = ({ children }) => {
-  const { user } = useAuth();
+  // const { user } = useAuth(); // Available if needed
   
   // Navigation state
   const [currentPage, setCurrentPage] = useState('home');
@@ -281,6 +281,8 @@ export const BlogProvider = ({ children }) => {
     deleteBlog,
     likeBlog,
     bookmarkBlog,
+    likePost: likeBlog, // Alias for compatibility
+    bookmarkPost: bookmarkBlog, // Alias for compatibility
     fetchTags,
     fetchCategories,
     generateBlogContent,

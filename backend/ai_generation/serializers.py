@@ -20,7 +20,8 @@ class ImageGenerationSerializer(serializers.ModelSerializer):
     class Meta:
         model = ImageGeneration
         fields = [
-            'id', 'user', 'prompt', 'style', 'image_url', 'local_path',
-            'width', 'height', 'created_at', 'success', 'error_message'
+            'id', 'user', 'uploaded_image', 'image_url', 'analysis_type', 
+            'generated_text', 'local_path', 'width', 'height', 'created_at', 
+            'success', 'error_message'
         ]
         read_only_fields = ['id', 'user', 'created_at']

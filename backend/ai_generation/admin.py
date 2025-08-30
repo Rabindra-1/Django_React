@@ -11,8 +11,11 @@ class GeneratedContentAdmin(admin.ModelAdmin):
 
 @admin.register(ImageGeneration)
 class ImageGenerationAdmin(admin.ModelAdmin):
-    list_display = ['user', 'prompt', 'style', 'success', 'created_at']
-    list_filter = ['style', 'success', 'created_at']
-    search_fields = ['user__username', 'prompt']
+    list_display = ['user', 'analysis_type', 'success', 'created_at']
+    list_filter = ['analysis_type', 'success', 'created_at']
+    search_fields = ['user__username', 'generated_text']
     readonly_fields = ['created_at']
     raw_id_fields = ['user']
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user')

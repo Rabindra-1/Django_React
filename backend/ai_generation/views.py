@@ -77,45 +77,80 @@ def generate_text(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def generate_image(request):
-    """Generate image using OpenAI DALL-E"""
-    prompt = request.data.get('prompt', '')
-    style = request.data.get('style', 'realistic')
+def analyze_image(request):
+    """Analyze uploaded image using OpenAI Vision API"""
+    analysis_type = request.data.get('analysis_type', 'description')
+    uploaded_image = request.FILES.get('image')
+    image_url = request.data.get('image_url')
     
-    if not prompt:
-        return Response({'error': 'Prompt is required'}, status=status.HTTP_400_BAD_REQUEST)
+    if not uploaded_image and not image_url:
+        return Response({'error': 'Image file or URL is required'}, status=status.HTTP_400_BAD_REQUEST)
     
-    if not settings.OPENAI_API_KEY:
+    if not client:
         return Response({'error': 'OpenAI API key not configured'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     start_time = time.time()
     
     try:
-        # Enhance prompt based on style
-        style_prompts = {
-            'realistic': f"A realistic, high-quality photograph of {prompt}",
-            'artistic': f"An artistic, creative interpretation of {prompt}",
-            'cartoon': f"A cartoon-style illustration of {prompt}",
-            'abstract': f"An abstract artistic representation of {prompt}"
+        # Prepare image for analysis
+        if uploaded_image:
+            # Convert uploaded image to base64
+            image_data = uploaded_image.read()
+            base64_image = base64.b64encode(image_data).decode('utf-8')
+            image_input = f"data:image/jpeg;base64,{base64_image}"
+        else:
+            # Use provided URL
+            image_input = image_url
+        
+        # Create analysis prompts based on type
+        analysis_prompts = {
+            'description': "Describe this image in detail, including what you see, the setting, colors, mood, and any notable features.",
+            'detailed': "Provide a comprehensive analysis of this image, including objects, people, composition, lighting, style, and any text visible in the image.",
+            'caption': "Create a concise, engaging caption for this image that could be used in social media or blog posts.",
+            'ocr': "Extract and transcribe any text visible in this image. If no text is visible, mention that the image contains no readable text."
         }
         
-        enhanced_prompt = style_prompts.get(style, prompt)
+        system_prompt = analysis_prompts.get(analysis_type, analysis_prompts['description'])
         
-        response = openai.Image.create(
-            prompt=enhanced_prompt,
-            n=1,
-            size="1024x1024"
+        # Use OpenAI Vision API
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",  # or "gpt-4-vision-preview" if available
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": system_prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": image_input}
+                        }
+                    ]
+                }
+            ],
+            max_tokens=1000
         )
         
-        image_url = response['data'][0]['url']
+        generated_text = response.choices[0].message.content
         processing_time = time.time() - start_time
         
+        # Save uploaded image if provided
+        saved_image_path = None
+        if uploaded_image:
+            # Reset file pointer for saving
+            uploaded_image.seek(0)
+            saved_image_path = default_storage.save(
+                f'analyzed_images/{uploaded_image.name}',
+                uploaded_image
+            )
+        
         # Save to database
-        image_generation = ImageGeneration.objects.create(
+        image_analysis = ImageGeneration.objects.create(
             user=request.user,
-            prompt=prompt,
-            style=style,
-            image_url=image_url,
+            uploaded_image=saved_image_path if uploaded_image else None,
+            image_url=image_url if image_url else None,
+            analysis_type=analysis_type,
+            generated_text=generated_text,
+            local_path=saved_image_path or '',
             success=True
         )
         
@@ -123,17 +158,19 @@ def generate_image(request):
         GeneratedContent.objects.create(
             user=request.user,
             content_type='image',
-            prompt=prompt,
-            result=image_url,
+            prompt=f"Image analysis ({analysis_type})",
+            result=generated_text,
+            file_path=saved_image_path or image_url or '',
             processing_time=processing_time,
             success=True,
-            metadata={'style': style, 'image_generation_id': image_generation.id}
+            metadata={'analysis_type': analysis_type, 'image_analysis_id': image_analysis.id}
         )
         
         return Response({
-            'id': image_generation.id,
-            'image_url': image_url,
-            'style': style,
+            'id': image_analysis.id,
+            'generated_text': generated_text,
+            'analysis_type': analysis_type,
+            'image_url': image_url or (request.build_absolute_uri(default_storage.url(saved_image_path)) if saved_image_path else None),
             'processing_time': processing_time
         })
     
@@ -143,8 +180,9 @@ def generate_image(request):
         # Save failed attempt
         ImageGeneration.objects.create(
             user=request.user,
-            prompt=prompt,
-            style=style,
+            uploaded_image=saved_image_path if 'saved_image_path' in locals() else None,
+            image_url=image_url if image_url else None,
+            analysis_type=analysis_type,
             success=False,
             error_message=str(e)
         )
@@ -152,7 +190,7 @@ def generate_image(request):
         GeneratedContent.objects.create(
             user=request.user,
             content_type='image',
-            prompt=prompt,
+            prompt=f"Image analysis ({analysis_type})",
             processing_time=processing_time,
             success=False,
             error_message=str(e)

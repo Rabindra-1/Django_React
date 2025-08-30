@@ -1,12 +1,13 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import BlogPlatformDesign from './pages/Blog-Platform-Design.js';
+import HomePage from './pages/HomePage.js';
 import ProfilePage from './pages/ProfilePage.js';
 import BlogDetailPage from './pages/BlogDetailPage.js';
 import CreateBlogPage from './pages/CreateBlogPage.js';
 import MyBlogsPage from './pages/MyBlogsPage.js';
 import BookmarksPage from './pages/BookmarksPage.js';
 import DashboardPage from './pages/DashboardPage.js';
+import AIGeneratorPage from './pages/AIGeneratorPage.js';
 import Layout from './components/Layout.js';
 import { AuthProvider } from './contexts/AuthContext';
 import { CustomThemeProvider } from './contexts/ThemeContext';
@@ -34,7 +35,7 @@ function App() {
             <Router>
               <Layout>
                 <Routes>
-                  <Route path="/" element={<BlogPlatformDesign />} />
+                  <Route path="/" element={<HomePage />} />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/blog/:slug" element={<BlogDetailPage />} />
                   <Route path="/create" element={<CreateBlogPage />} />
@@ -42,6 +43,7 @@ function App() {
                   <Route path="/my-blogs" element={<MyBlogsPage />} />
                   <Route path="/bookmarks" element={<BookmarksPage />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
+                  <Route path="/ai-generator" element={<AIGeneratorPage />} />
                 </Routes>
               </Layout>
             </Router>

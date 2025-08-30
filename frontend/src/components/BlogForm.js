@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Save, X, Upload, Eye, EyeOff, Loader2, Plus, Minus } from 'lucide-react';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import { Save, X, Eye, EyeOff, Loader2, Plus } from 'lucide-react';
+// import ReactQuill from 'react-quill';
+// import 'react-quill/dist/quill.snow.css';
 import { useBlogContext } from '../contexts/BlogContext';
 
 const BlogForm = ({ blog = null, onSave, onCancel }) => {
@@ -114,20 +114,7 @@ const BlogForm = ({ blog = null, onSave, onCancel }) => {
     }
   };
 
-  const quillModules = {
-    toolbar: [
-      [{ 'header': [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      ['link', 'image', 'video'],
-      ['clean']
-    ],
-  };
-
-  const quillFormats = [
-    'header', 'bold', 'italic', 'underline', 'strike',
-    'list', 'bullet', 'link', 'image', 'video'
-  ];
+  // Quill modules and formats removed - now using textarea
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
@@ -398,19 +385,26 @@ const BlogForm = ({ blog = null, onSave, onCancel }) => {
               {/* Content Editor */}
               <div>
                 <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Content *
+                  Content * (Markdown supported)
                 </label>
-                <div className={`${isDarkMode ? 'bg-gray-800 rounded-lg' : 'bg-white rounded-lg'}`}>
-                  <ReactQuill
-                    theme="snow"
-                    value={formData.content}
-                    onChange={(value) => handleInputChange('content', value)}
-                    modules={quillModules}
-                    formats={quillFormats}
-                    className={isDarkMode ? 'dark-quill' : ''}
-                    style={{ minHeight: '200px' }}
-                  />
-                </div>
+                <textarea
+                  value={formData.content}
+                  onChange={(e) => handleInputChange('content', e.target.value)}
+                  placeholder="Write your blog content here... You can use Markdown formatting:\n\n# Heading 1\n## Heading 2\n**Bold text**\n*Italic text*\n[Link](url)\n- List item"
+                  rows={15}
+                  className={`
+                    w-full px-4 py-3 rounded-lg border transition-colors duration-200 resize-y
+                    ${isDarkMode 
+                      ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:border-blue-500' 
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'
+                    }
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20
+                  `}
+                  required
+                />
+                <p className={`text-xs mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Supports Markdown formatting: **bold**, *italic*, # headings, [links](url), - lists
+                </p>
               </div>
 
               {/* Publish Options */}
