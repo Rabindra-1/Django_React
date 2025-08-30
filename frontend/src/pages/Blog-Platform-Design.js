@@ -2,7 +2,7 @@
 // This component now uses the comprehensive background infrastructure
 
 import * as React from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useBlogContext } from '../contexts/BlogContext.js';
 import { useBlog } from '../hooks/useBlog.js';
@@ -12,6 +12,12 @@ import { formatDate, getCategoryColor, getCategoryColorDark } from '../utils/hel
 import { BLOG_CATEGORIES, PAGES, GENERATION_TYPES, SUCCESS_MESSAGES } from '../constants/index.js';
 import VideoToBlogConverter from '../components/VideoToBlogConverter.js';
 import ImageToBlogConverter from '../components/ImageToBlogConverter.js';
+import ClickTest from '../components/ClickTest.js';
+import TextGeneratorTab from '../components/TextGeneratorTab.js';
+import YouTubeProcessorTab from '../components/YouTubeProcessorTab.js';
+import CommentModal from '../components/CommentModal.js';
+import MediaUploader from '../components/MediaUploader.js';
+import MediaDisplay from '../components/MediaDisplay.js';
 
 const App = () => {
   const location = useLocation();
@@ -39,6 +45,23 @@ const App = () => {
   const { posts, loading, error, createPost, likePost } = useBlog();
   const { generateText, generateImage, processYouTubeLink, generateVideo, loading: aiLoading } = useAIGeneration();
   const { user } = useAuth();
+  
+  // Comment modal state
+  const [commentModalOpen, setCommentModalOpen] = useState(false);
+  const [selectedPostForComments, setSelectedPostForComments] = useState(null);
+  
+  // Media upload state for new blogs
+  const [currentBlogId, setCurrentBlogId] = useState(null);
+  const [showMediaUploader, setShowMediaUploader] = useState(false);
+  
+  // Debug logging for modal state
+  React.useEffect(() => {
+    console.log('Modal state changed:', { 
+      showMediaUploader, 
+      currentBlogId, 
+      user: user?.username 
+    });
+  }, [showMediaUploader, currentBlogId, user]);
   
   // Update current page based on URL params
   React.useEffect(() => {
@@ -83,10 +106,20 @@ const App = () => {
     console.log('Blog creation result:', result);
     
     if (result.success) {
-      resetForm();
-      alert('Blog post created successfully! You can view it on the Home page.');
-      // Navigate to home page to see the new post
-      setCurrentPage('home');
+      const createdBlogId = result.data?.id;
+      console.log('Blog created with ID:', createdBlogId);
+      console.log('Setting up media uploader modal...');
+      
+      if (createdBlogId) {
+        setCurrentBlogId(createdBlogId);
+        setShowMediaUploader(true);
+        console.log('Media uploader modal should be shown now');
+        alert('Blog post created successfully! You can now add images or videos (optional).');
+      } else {
+        resetForm();
+        alert('Blog post created successfully! You can view it on the Home page.');
+        setCurrentPage('home');
+      }
     } else {
       console.error('Blog creation failed:', result.error);
       alert(`Failed to create post: ${result.error}`);
@@ -156,10 +189,12 @@ const App = () => {
               <div className="flex items-center justify-between">
                 <button
                   onClick={(e) => {
+                    e.preventDefault();
                     e.stopPropagation();
+                    console.log('Read More/Less clicked for post:', post.id);
                     setExpandedPost(expandedPost === post.id ? null : post.id);
                   }}
-                  className={`text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200 cursor-pointer whitespace-nowrap !rounded-button ${
+                  className={`text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200 cursor-pointer whitespace-nowrap px-3 py-1 rounded ${
                     isDarkMode ? 'text-blue-400 hover:text-blue-300' : ''
                   }`}
                 >
@@ -167,14 +202,54 @@ const App = () => {
                 </button>
                 
                 <div className="flex items-center space-x-4">
-                  <div className={`flex items-center space-x-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    <i className="fas fa-heart"></i>
-                    <span>{post.likes}</span>
-                  </div>
-                  <div className={`flex items-center space-x-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <button
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Like button clicked for post:', post.id);
+                      console.log('User:', user);
+                      console.log('likePost function:', likePost);
+                      
+                      if (!user) {
+                        alert('Please log in to like posts');
+                        return;
+                      }
+                      
+                      if (!likePost) {
+                        alert('Like functionality is not available at the moment. Please ensure the backend is running.');
+                        return;
+                      }
+                      
+                      try {
+                        const result = await likePost(post.id);
+                        console.log('Like result:', result);
+                        if (!result.success) {
+                          alert('Failed to like post: ' + (result.error || 'Unknown error'));
+                        }
+                      } catch (error) {
+                        console.error('Like button error:', error);
+                        alert('An error occurred while liking the post');
+                      }
+                    }}
+                    className={`flex items-center space-x-1 cursor-pointer hover:opacity-75 transition-opacity duration-200 ${post.is_liked ? (isDarkMode ? 'text-red-400' : 'text-red-600') : (isDarkMode ? 'text-gray-400' : 'text-gray-500')}`}
+                  >
+                    <i className={`fas ${post.is_liked ? 'fa-heart' : 'fa-heart'}`}></i>
+                    <span>{post.likes_count || 0}</span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Comment button clicked for post:', post.id);
+                      // Open comment modal
+                      setSelectedPostForComments(post);
+                      setCommentModalOpen(true);
+                    }}
+                    className={`flex items-center space-x-1 cursor-pointer hover:opacity-75 transition-opacity duration-200 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                  >
                     <i className="fas fa-comment"></i>
-                    <span>{post.comments}</span>
-                  </div>
+                    <span>{post.comments_count || 0}</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -219,25 +294,83 @@ const App = () => {
             <div className={`prose max-w-none mb-8 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
               <p className="text-lg leading-relaxed">{selectedPost.fullContent}</p>
             </div>
+            
+            {/* Display Media Gallery */}
+            <MediaDisplay
+              images={selectedPost.images || []}
+              videos={selectedPost.videos || []}
+              isDarkMode={isDarkMode}
+              isOwner={user && selectedPost.author && (selectedPost.author.id === user.id || selectedPost.author.username === user.username)}
+              onDeleteMedia={(mediaId, mediaType) => {
+                // Refresh the post data after deletion
+                // You might want to implement this properly
+                console.log('Media deleted:', mediaId, mediaType);
+              }}
+            />
 
             <div className="flex items-center justify-between border-t pt-6">
               <div className="flex items-center space-x-6">
-                <button className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors duration-200 cursor-pointer whitespace-nowrap !rounded-button ${
-                  isDarkMode ? 'bg-red-900 text-red-300 hover:bg-red-800' : 'bg-red-50 text-red-600 hover:bg-red-100'
-                }`}>
+                <button 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Like button clicked for post:', selectedPost.id);
+                    if (likePost) {
+                      likePost(selectedPost.id);
+                    } else {
+                      alert('Like functionality is not available at the moment. Please ensure the backend is running.');
+                    }
+                  }}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors duration-200 cursor-pointer whitespace-nowrap ${
+                    isDarkMode ? 'bg-red-900 text-red-300 hover:bg-red-800' : 'bg-red-50 text-red-600 hover:bg-red-100'
+                  }`}>
                   <i className="fas fa-heart"></i>
-                  <span>Like ({selectedPost.likes})</span>
+                  <span>Like ({selectedPost.likes_count || 0})</span>
                 </button>
-                <button className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors duration-200 cursor-pointer whitespace-nowrap !rounded-button ${
-                  isDarkMode ? 'bg-blue-900 text-blue-300 hover:bg-blue-800' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
-                }`}>
+                <button 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Comment button clicked for post:', selectedPost.id);
+                    // Open comment modal
+                    setSelectedPostForComments(selectedPost);
+                    setCommentModalOpen(true);
+                  }}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors duration-200 cursor-pointer whitespace-nowrap ${
+                    isDarkMode ? 'bg-blue-900 text-blue-300 hover:bg-blue-800' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                  }`}>
                   <i className="fas fa-comment"></i>
-                  <span>Comment ({selectedPost.comments})</span>
+                  <span>Comment ({selectedPost.comments_count || 0})</span>
                 </button>
               </div>
-              <button className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors duration-200 cursor-pointer whitespace-nowrap !rounded-button ${
-                isDarkMode ? 'bg-green-900 text-green-300 hover:bg-green-800' : 'bg-green-50 text-green-600 hover:bg-green-100'
-              }`}>
+              <button 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Share button clicked for post:', selectedPost.id);
+                  // Share functionality
+                  if (navigator.share && selectedPost) {
+                    navigator.share({
+                      title: selectedPost.title,
+                      text: selectedPost.shortContent || selectedPost.content,
+                      url: window.location.href
+                    }).catch((error) => {
+                      console.error('Share failed:', error);
+                      // Fallback to clipboard
+                      navigator.clipboard.writeText(window.location.href)
+                        .then(() => alert('Link copied to clipboard!'))
+                        .catch(() => alert('Unable to copy link'));
+                    });
+                  } else {
+                    // Fallback: copy URL to clipboard
+                    navigator.clipboard.writeText(window.location.href)
+                      .then(() => alert('Link copied to clipboard!'))
+                      .catch(() => alert('Unable to copy link'));
+                  }
+                }}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors duration-200 cursor-pointer whitespace-nowrap ${
+                  isDarkMode ? 'bg-green-900 text-green-300 hover:bg-green-800' : 'bg-green-50 text-green-600 hover:bg-green-100'
+                }`}>
                 <i className="fas fa-share"></i>
                 <span>Share</span>
               </button>
@@ -248,94 +381,209 @@ const App = () => {
     </div>
   );
 
-  const renderWritePage = () => (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} transition-colors duration-300`}>
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className={`text-4xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            Write a New Blog Post
-          </h1>
-          <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            Share your thoughts and ideas with the community
-          </p>
-        </div>
+  const renderWritePage = () => {
+    const [featuredImageFile, setFeaturedImageFile] = useState(null);
+    const [featuredImagePreview, setFeaturedImagePreview] = useState(null);
+    const [additionalMediaEnabled, setAdditionalMediaEnabled] = useState(false);
+    const featuredImageInputRef = useRef(null);
 
-        <form onSubmit={handleFormSubmit} className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border p-8 transition-colors duration-300`}>
-          <div className="mb-6">
-            <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Blog Title
-            </label>
-            <input
-              type="text"
-              value={blogForm.title}
-              onChange={(e) => setBlogForm({ ...blogForm, title: e.target.value })}
-              className={`w-full px-4 py-3 rounded-lg border transition-colors duration-200 text-sm ${
-                isDarkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500' 
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50`}
-              placeholder="Enter your blog title..."
-              required
-            />
+    const handleFeaturedImageSelect = (e) => {
+      const file = e.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        setFeaturedImageFile(file);
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          setFeaturedImagePreview(event.target.result);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        alert('Please select a valid image file.');
+      }
+    };
+
+    const removeFeaturedImage = () => {
+      setFeaturedImageFile(null);
+      setFeaturedImagePreview(null);
+      if (featuredImageInputRef.current) {
+        featuredImageInputRef.current.value = '';
+      }
+    };
+
+    return (
+      <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} transition-colors duration-300`}>
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="mb-8">
+            <h1 className={`text-4xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              Write a New Blog Post
+            </h1>
+            <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              Share your thoughts and ideas with the community
+            </p>
           </div>
 
-          <div className="mb-6">
-            <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Category
-            </label>
-            <div className="relative">
-              <select
-                value={blogForm.category}
-                onChange={(e) => setBlogForm({ ...blogForm, category: e.target.value })}
-                className={`w-full px-4 py-3 rounded-lg border transition-colors duration-200 text-sm cursor-pointer appearance-none ${
+          <form onSubmit={handleFormSubmit} className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border p-8 transition-colors duration-300`}>
+            <div className="mb-6">
+              <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Blog Title
+              </label>
+              <input
+                type="text"
+                value={blogForm.title}
+                onChange={(e) => setBlogForm({ ...blogForm, title: e.target.value })}
+                className={`w-full px-4 py-3 rounded-lg border transition-colors duration-200 text-sm ${
                   isDarkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500' 
-                    : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'
                 } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50`}
-              >
-                <option value="tech">Technology</option>
-                <option value="sports">Sports</option>
-                <option value="education">Education</option>
-                <option value="lifestyle">Lifestyle</option>
-                <option value="business">Business</option>
-                <option value="health">Health</option>
-              </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <i className={`fas fa-chevron-down ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}></i>
+                placeholder="Enter your blog title..."
+                required
+              />
+            </div>
+
+            <div className="mb-6">
+              <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Category
+              </label>
+              <div className="relative">
+                <select
+                  value={blogForm.category}
+                  onChange={(e) => setBlogForm({ ...blogForm, category: e.target.value })}
+                  className={`w-full px-4 py-3 rounded-lg border transition-colors duration-200 text-sm cursor-pointer appearance-none ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500' 
+                      : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
+                  } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50`}
+                >
+                  <option value="tech">Technology</option>
+                  <option value="sports">Sports</option>
+                  <option value="education">Education</option>
+                  <option value="lifestyle">Lifestyle</option>
+                  <option value="business">Business</option>
+                  <option value="health">Health</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <i className={`fas fa-chevron-down ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}></i>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="mb-8">
-            <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Blog Content
-            </label>
-            <textarea
-              value={blogForm.content}
-              onChange={(e) => setBlogForm({ ...blogForm, content: e.target.value })}
-              rows={12}
-              className={`w-full px-4 py-3 rounded-lg border transition-colors duration-200 text-sm resize-none ${
-                isDarkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500' 
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50`}
-              placeholder="Write your blog content here..."
-              required
-            />
-          </div>
+            {/* Featured Image Upload */}
+            <div className="mb-6">
+              <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Featured Image (Optional)
+              </label>
+              <p className={`text-xs mb-3 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                Upload a cover image for your blog post. This will be displayed as the main image.
+              </p>
+              
+              {!featuredImagePreview ? (
+                <div
+                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors duration-200 ${
+                    isDarkMode 
+                      ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-700/50' 
+                      : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                  }`}
+                  onClick={() => featuredImageInputRef.current?.click()}
+                >
+                  <i className={`fas fa-image text-3xl mb-3 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}></i>
+                  <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Click to upload featured image
+                  </p>
+                  <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Supports: JPG, PNG, GIF, WebP
+                  </p>
+                </div>
+              ) : (
+                <div className="relative">
+                  <img
+                    src={featuredImagePreview}
+                    alt="Featured image preview"
+                    className="w-full h-48 object-cover rounded-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeFeaturedImage}
+                    className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-2 hover:bg-red-700 transition-colors duration-200"
+                  >
+                    <i className="fas fa-times"></i>
+                  </button>
+                </div>
+              )}
+              
+              <input
+                ref={featuredImageInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFeaturedImageSelect}
+                className="hidden"
+              />
+            </div>
 
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              className="px-8 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 cursor-pointer whitespace-nowrap !rounded-button"
-            >
-              Publish Blog Post
-            </button>
-          </div>
-        </form>
+            <div className="mb-6">
+              <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Blog Content
+              </label>
+              <textarea
+                value={blogForm.content}
+                onChange={(e) => setBlogForm({ ...blogForm, content: e.target.value })}
+                rows={12}
+                className={`w-full px-4 py-3 rounded-lg border transition-colors duration-200 text-sm resize-none ${
+                  isDarkMode 
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'
+                } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50`}
+                placeholder="Write your blog content here..."
+                required
+              />
+            </div>
+
+            {/* Additional Media Toggle */}
+            <div className="mb-6">
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="additionalMedia"
+                  checked={additionalMediaEnabled}
+                  onChange={(e) => setAdditionalMediaEnabled(e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="additionalMedia" className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Add additional images/videos to this post
+                </label>
+              </div>
+              <p className={`text-xs mt-1 ml-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                Check this if you want to add more media files after creating the blog post
+              </p>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                {featuredImageFile && (
+                  <div className="flex items-center space-x-2">
+                    <i className="fas fa-check text-green-500"></i>
+                    <span>Featured image ready</span>
+                  </div>
+                )}
+                {additionalMediaEnabled && (
+                  <div className="flex items-center space-x-2 mt-1">
+                    <i className="fas fa-info-circle text-blue-500"></i>
+                    <span>Additional media upload will be available after creating the post</span>
+                  </div>
+                )}
+              </div>
+              
+              <button
+                type="submit"
+                className="px-8 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 cursor-pointer whitespace-nowrap !rounded-button"
+              >
+                Publish Blog Post
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderGenerateSubNav = () => (
     <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-100 border-gray-200'} border-b transition-colors duration-300`}>
@@ -381,6 +629,19 @@ const App = () => {
           >
             IMAGE
           </button>
+          <button
+            onClick={() => {
+              console.log('Debug tab clicked');
+              setCurrentSubPage('debug');
+            }}
+            className={`px-4 py-3 text-sm font-medium transition-colors duration-200 cursor-pointer whitespace-nowrap !rounded-button ${
+              currentSubPage === 'debug'
+                ? isDarkMode ? 'text-blue-400 border-b-2 border-blue-400' : 'text-blue-600 border-b-2 border-blue-600'
+                : isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-gray-900'
+            }`}
+          >
+            DEBUG
+          </button>
         </div>
       </div>
     </div>
@@ -391,73 +652,25 @@ const App = () => {
       {renderGenerateSubNav()}
       
       <div className="max-w-6xl mx-auto px-4 py-8">
-        {currentSubPage === 'text' && (
-          <div>
-            <h1 className={`text-4xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              AI Text Generator
-            </h1>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border p-6 transition-colors duration-300`}>
-                <h3 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Generate Content
-                </h3>
-                <textarea
-                  placeholder="Enter your prompt here..."
-                  className={`w-full h-32 px-4 py-3 rounded-lg border transition-colors duration-200 text-sm resize-none ${
-                    isDarkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                />
-                <button className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 cursor-pointer whitespace-nowrap !rounded-button">
-                  Generate Text
-                </button>
-              </div>
-              <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border p-6 transition-colors duration-300`}>
-                <h3 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Generated Output
-                </h3>
-                <div className={`h-32 p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'} ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  Your generated text will appear here...
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {currentSubPage === 'text' &&
+          <TextGeneratorTab isDarkMode={isDarkMode} />
+        }
 
-        {currentSubPage === 'youtube' && (
-          <div>
-            <h1 className={`text-4xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              YouTube Link Processor
-            </h1>
-            <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border p-6 transition-colors duration-300`}>
-              <h3 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                Extract Content from YouTube
-              </h3>
-              <input
-                type="url"
-                placeholder="Paste YouTube URL here..."
-                className={`w-full px-4 py-3 rounded-lg border transition-colors duration-200 text-sm ${
-                  isDarkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              />
-              <button className="mt-4 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 cursor-pointer whitespace-nowrap !rounded-button">
-                <i className="fab fa-youtube mr-2"></i>
-                Process Video
-              </button>
-            </div>
-          </div>
-        )}
+        {currentSubPage === 'youtube' &&
+          <YouTubeProcessorTab isDarkMode={isDarkMode} />
+        }
 
         {currentSubPage === 'video' && (
           <VideoToBlogConverter isDarkMode={isDarkMode} />
         )}
 
-        {currentSubPage === 'image' && (
+        {currentSubPage === 'image' &&
           <ImageToBlogConverter isDarkMode={isDarkMode} />
-        )}
+        }
+        
+        {currentSubPage === 'debug' &&
+          <ClickTest />
+        }
       </div>
     </div>
   );
@@ -558,6 +771,83 @@ const App = () => {
       {currentPage === 'write' && renderWritePage()}
       {currentPage === 'generate' && renderGeneratePage()}
       {renderFooter()}
+      
+      {/* Comment Modal */}
+      <CommentModal
+        isOpen={commentModalOpen}
+        onClose={() => setCommentModalOpen(false)}
+        post={selectedPostForComments}
+        isDarkMode={isDarkMode}
+      />
+      
+      {/* Media Upload Modal */}
+      {showMediaUploader && currentBlogId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className={`max-w-2xl w-full max-h-[90vh] overflow-y-auto rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  Add Images or Videos (Optional)
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowMediaUploader(false);
+                    setCurrentBlogId(null);
+                    resetForm();
+                    setCurrentPage('home');
+                  }}
+                  className={`p-2 rounded-lg transition-colors duration-200 ${
+                    isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  <i className="fas fa-times text-xl"></i>
+                </button>
+              </div>
+              
+              <p className={`mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                Your blog post has been created successfully! You can now add images or videos to make it more engaging.
+              </p>
+              
+              <MediaUploader
+                isDarkMode={isDarkMode}
+                blogId={currentBlogId}
+                mediaType="both"
+                onMediaUpload={(media) => {
+                  console.log('Media uploaded:', media);
+                  // Optionally show success message
+                }}
+              />
+              
+              <div className="flex justify-between mt-6">
+                <button
+                  onClick={() => {
+                    setShowMediaUploader(false);
+                    setCurrentBlogId(null);
+                    resetForm();
+                    setCurrentPage('home');
+                  }}
+                  className={`px-6 py-2 rounded-lg transition-colors duration-200 ${
+                    isDarkMode ? 'bg-gray-600 text-white hover:bg-gray-500' : 'bg-gray-500 text-white hover:bg-gray-600'
+                  }`}
+                >
+                  Skip & Go to Home
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMediaUploader(false);
+                    setCurrentBlogId(null);
+                    resetForm();
+                    setCurrentPage('home');
+                  }}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

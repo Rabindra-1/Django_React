@@ -146,7 +146,7 @@ const ImageToBlogConverter = ({ isDarkMode }) => {
                   </span>
                   <button
                     onClick={clearAll}
-                    className="text-red-500 hover:text-red-700 text-sm transition-colors duration-200"
+                    className="text-red-500 hover:text-red-700 text-sm transition-colors duration-200 cursor-pointer"
                   >
                     Clear All
                   </button>
@@ -162,7 +162,7 @@ const ImageToBlogConverter = ({ isDarkMode }) => {
                       />
                       <button
                         onClick={() => removeFile(index)}
-                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer"
                       >
                         ×
                       </button>
@@ -184,10 +184,10 @@ const ImageToBlogConverter = ({ isDarkMode }) => {
             <button
               onClick={handleUpload}
               disabled={selectedFiles.length === 0 || isProcessing}
-              className={`w-full px-6 py-3 rounded-lg font-medium transition-colors duration-200 cursor-pointer whitespace-nowrap ${
+              className={`w-full px-6 py-3 rounded-lg font-medium transition-colors duration-200 whitespace-nowrap ${
                 selectedFiles.length === 0 || isProcessing
                   ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                  : 'bg-green-600 text-white hover:bg-green-700'
+                  : 'bg-green-600 text-white hover:bg-green-700 cursor-pointer'
               }`}
             >
               {isProcessing ? (
@@ -225,7 +225,11 @@ const ImageToBlogConverter = ({ isDarkMode }) => {
           {extractedText && (
             <div className="mt-4 flex space-x-2">
               <button
-                onClick={() => navigator.clipboard.writeText(extractedText)}
+                onClick={() => {
+                  navigator.clipboard.writeText(extractedText)
+                    .then(() => alert('Text copied to clipboard!'))
+                    .catch(() => alert('Failed to copy text'));
+                }}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 cursor-pointer whitespace-nowrap ${
                   isDarkMode 
                     ? 'bg-blue-900 text-blue-300 hover:bg-blue-800' 

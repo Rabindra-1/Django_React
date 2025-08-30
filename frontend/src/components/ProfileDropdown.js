@@ -140,7 +140,8 @@ const ProfileDropdown = ({ isDarkMode }) => {
             <button
               onClick={() => {
                 setIsOpen(false);
-                // Add settings navigation logic here
+                // TODO: Implement settings page navigation
+                alert('Settings page will be implemented in future updates');
               }}
               className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 transition-colors ${
                 isDarkMode 
@@ -155,7 +156,7 @@ const ProfileDropdown = ({ isDarkMode }) => {
             <button
               onClick={() => {
                 setIsOpen(false);
-                // Add my posts navigation logic here
+                navigate('/?page=write'); // Navigate to the write page to see user's posts or write new ones
               }}
               className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 transition-colors ${
                 isDarkMode 

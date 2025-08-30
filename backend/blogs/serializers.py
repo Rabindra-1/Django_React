@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Blog, Tag, BlogImage, BlogLike, BlogBookmark, Category
+from .models import Blog, Tag, BlogImage, BlogVideo, BlogLike, BlogBookmark, Category
 from accounts.serializers import UserSerializer
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -16,6 +16,11 @@ class BlogImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = BlogImage
         fields = ['id', 'image', 'caption', 'order']
+
+class BlogVideoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BlogVideo
+        fields = ['id', 'video', 'thumbnail', 'caption', 'order']
 
 class BlogListSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
@@ -53,6 +58,7 @@ class BlogDetailSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     tags = TagSerializer(many=True, read_only=True)
     images = BlogImageSerializer(many=True, read_only=True)
+    videos = BlogVideoSerializer(many=True, read_only=True)
     is_liked = serializers.SerializerMethodField()
     is_bookmarked = serializers.SerializerMethodField()
     comments_count = serializers.SerializerMethodField()
@@ -61,7 +67,7 @@ class BlogDetailSerializer(serializers.ModelSerializer):
         model = Blog
         fields = [
             'id', 'title', 'slug', 'content', 'author', 'category', 'tags', 
-            'layout_type', 'featured_image', 'images', 'created_at', 'updated_at',
+            'layout_type', 'featured_image', 'images', 'videos', 'created_at', 'updated_at',
             'likes_count', 'views_count', 'is_liked', 'is_bookmarked', 'comments_count'
         ]
     

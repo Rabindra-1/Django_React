@@ -13,11 +13,13 @@ import tempfile
 import os
 from urllib.parse import parse_qs, urlparse
 
-from .models import Blog, BlogLike, BlogBookmark, Tag, Category
+from .models import Blog, BlogLike, BlogBookmark, Tag, Category, BlogImage, BlogVideo
 from .serializers import (
     BlogListSerializer,
     BlogDetailSerializer,
     BlogCreateUpdateSerializer,
+    BlogImageSerializer,
+    BlogVideoSerializer,
     TagSerializer,
     CategorySerializer
 )
@@ -241,3 +243,65 @@ def categories(request):
     categories = Category.objects.all().order_by('name')
     serializer = CategorySerializer(categories, many=True)
     return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
+def add_blog_image(request, blog_id):
+    blog = get_object_or_404(Blog, id=blog_id, author=request.user)
+    
+    image = request.FILES.get('image')
+    caption = request.data.get('caption', '')
+    order = request.data.get('order', 0)
+    
+    if not image:
+        return Response({'error': 'Image file is required'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    blog_image = BlogImage.objects.create(
+        blog=blog,
+        image=image,
+        caption=caption,
+        order=order
+    )
+    
+    serializer = BlogImageSerializer(blog_image)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
+def add_blog_video(request, blog_id):
+    blog = get_object_or_404(Blog, id=blog_id, author=request.user)
+    
+    video = request.FILES.get('video')
+    thumbnail = request.FILES.get('thumbnail')
+    caption = request.data.get('caption', '')
+    order = request.data.get('order', 0)
+    
+    if not video:
+        return Response({'error': 'Video file is required'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    blog_video = BlogVideo.objects.create(
+        blog=blog,
+        video=video,
+        thumbnail=thumbnail,
+        caption=caption,
+        order=order
+    )
+    
+    serializer = BlogVideoSerializer(blog_video)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_blog_image(request, image_id):
+    image = get_object_or_404(BlogImage, id=image_id, blog__author=request.user)
+    image.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_blog_video(request, video_id):
+    video = get_object_or_404(BlogVideo, id=video_id, blog__author=request.user)
+    video.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)

@@ -73,6 +73,19 @@ class BlogImage(models.Model):
     def __str__(self):
         return f"{self.blog.title} - Image {self.order}"
 
+class BlogVideo(models.Model):
+    blog = models.ForeignKey(Blog, on_delete=models.CASCADE, related_name='videos')
+    video = models.FileField(upload_to='blog_videos/')
+    thumbnail = models.ImageField(upload_to='blog_video_thumbnails/', null=True, blank=True)
+    caption = models.CharField(max_length=200, blank=True)
+    order = models.PositiveIntegerField(default=0)
+    
+    class Meta:
+        ordering = ['order']
+    
+    def __str__(self):
+        return f"{self.blog.title} - Video {self.order}"
+
 class BlogLike(models.Model):
     blog = models.ForeignKey(Blog, on_delete=models.CASCADE, related_name='likes')
     user = models.ForeignKey(User, on_delete=models.CASCADE)

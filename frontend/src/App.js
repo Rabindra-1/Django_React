@@ -2,6 +2,11 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import BlogPlatformDesign from './pages/Blog-Platform-Design.js';
 import ProfilePage from './pages/ProfilePage.js';
+import BlogDetailPage from './pages/BlogDetailPage.js';
+import CreateBlogPage from './pages/CreateBlogPage.js';
+import MyBlogsPage from './pages/MyBlogsPage.js';
+import BookmarksPage from './pages/BookmarksPage.js';
+import DashboardPage from './pages/DashboardPage.js';
 import Layout from './components/Layout.js';
 import { AuthProvider } from './contexts/AuthContext';
 import { CustomThemeProvider } from './contexts/ThemeContext';
@@ -31,6 +36,12 @@ function App() {
                 <Routes>
                   <Route path="/" element={<BlogPlatformDesign />} />
                   <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/blog/:slug" element={<BlogDetailPage />} />
+                  <Route path="/create" element={<CreateBlogPage />} />
+                  <Route path="/edit/:slug" element={<CreateBlogPage />} />
+                  <Route path="/my-blogs" element={<MyBlogsPage />} />
+                  <Route path="/bookmarks" element={<BookmarksPage />} />
+                  <Route path="/dashboard" element={<DashboardPage />} />
                 </Routes>
               </Layout>
             </Router>

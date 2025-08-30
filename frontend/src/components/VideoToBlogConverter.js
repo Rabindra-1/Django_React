@@ -112,7 +112,7 @@ const VideoToBlogConverter = ({ isDarkMode }) => {
                   </div>
                   <button
                     onClick={clearFile}
-                    className={`text-red-500 hover:text-red-700 transition-colors duration-200`}
+                    className={`text-red-500 hover:text-red-700 transition-colors duration-200 cursor-pointer`}
                   >
                     <i className="fas fa-times"></i>
                   </button>
@@ -132,10 +132,10 @@ const VideoToBlogConverter = ({ isDarkMode }) => {
             <button
               onClick={handleUpload}
               disabled={!selectedFile || isProcessing}
-              className={`w-full px-6 py-3 rounded-lg font-medium transition-colors duration-200 cursor-pointer whitespace-nowrap ${
+              className={`w-full px-6 py-3 rounded-lg font-medium transition-colors duration-200 whitespace-nowrap ${
                 !selectedFile || isProcessing
                   ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                  : 'bg-purple-600 text-white hover:bg-purple-700'
+                  : 'bg-purple-600 text-white hover:bg-purple-700 cursor-pointer'
               }`}
             >
               {isProcessing ? (
@@ -173,7 +173,11 @@ const VideoToBlogConverter = ({ isDarkMode }) => {
           {extractedText && (
             <div className="mt-4 flex space-x-2">
               <button
-                onClick={() => navigator.clipboard.writeText(extractedText)}
+                onClick={() => {
+                  navigator.clipboard.writeText(extractedText)
+                    .then(() => alert('Text copied to clipboard!'))
+                    .catch(() => alert('Failed to copy text'));
+                }}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 cursor-pointer whitespace-nowrap ${
                   isDarkMode 
                     ? 'bg-blue-900 text-blue-300 hover:bg-blue-800' 
