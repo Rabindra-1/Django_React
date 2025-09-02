@@ -184,5 +184,10 @@ CORS_ALLOWED_ORIGINS = [
 
 CORS_ALLOW_CREDENTIALS = True
 
-# OpenAI API Key
+# AI Configuration
 OPENAI_API_KEY = config('OPENAI_API_KEY', default='')
+HUGGINGFACE_API_KEY = config('HUGGINGFACE_API_KEY', default='')
+GROQ_API_KEY = config('GROQ_API_KEY', default='')
+GEMINI_API_KEY = config('GEMINI_API_KEY', default='')
+USE_LOCAL_AI = config('USE_LOCAL_AI', default=False, cast=bool)
+AI_PROVIDER = config('AI_PROVIDER', default='openai')  # openai, huggingface, groq, gemini, local

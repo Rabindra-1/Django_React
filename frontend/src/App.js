@@ -8,6 +8,8 @@ import MyBlogsPage from './pages/MyBlogsPage.js';
 import BookmarksPage from './pages/BookmarksPage.js';
 import DashboardPage from './pages/DashboardPage.js';
 import AIGeneratorPage from './pages/AIGeneratorPage.js';
+import RagGeneratorPage from './pages/RagGeneratorPage.js';
+import RagSearchPage from './pages/RagSearchPage.js';
 import Layout from './components/Layout.js';
 import { AuthProvider } from './contexts/AuthContext';
 import { CustomThemeProvider } from './contexts/ThemeContext';
@@ -44,6 +46,8 @@ function App() {
                   <Route path="/bookmarks" element={<BookmarksPage />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/ai-generator" element={<AIGeneratorPage />} />
+                  <Route path="/rag-generator" element={<RagGeneratorPage />} />
+                  <Route path="/rag-search" element={<RagSearchPage />} />
                 </Routes>
               </Layout>
             </Router>

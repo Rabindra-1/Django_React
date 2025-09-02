@@ -19,9 +19,9 @@ const Layout = ({ children }) => {
           <div className="flex items-center space-x-8">
             <Link 
               to="/" 
-              className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'} hover:opacity-80 transition-opacity duration-200`}
+              className={`text-2xl font-bold ${isDarkMode ? 'text-green-400' : 'text-red-600'} hover:opacity-80 transition-opacity duration-200`}
             >
-              Rawan
+              Ai Blog Generator
             </Link>
             <div className="flex space-x-6">
               <Link
@@ -36,7 +36,7 @@ const Layout = ({ children }) => {
               </Link>
               {user && (
                 <>
-                  <button
+                  {/* <button
                     onClick={() => navigate('/?page=write')}
                     className={`px-3 py-2 text-sm font-medium transition-colors duration-200 cursor-pointer whitespace-nowrap !rounded-button ${
                       location.search === '?page=write'
@@ -55,7 +55,27 @@ const Layout = ({ children }) => {
                     }`}
                   >
                     Generate
-                  </button>
+                  </button> */}
+                  <Link
+                    to="/rag-generator"
+                    className={`px-3 py-2 text-sm font-medium transition-colors duration-200 cursor-pointer whitespace-nowrap !rounded-button ${
+                      location.pathname === '/rag-generator'
+                        ? isDarkMode ? 'text-blue-400 border-b-2 border-blue-400' : 'text-blue-600 border-b-2 border-blue-600'
+                        : isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-gray-900'
+                    }`}
+                  >
+                    RAG Generator
+                  </Link>
+                  <Link
+                    to="/rag-search"
+                    className={`px-3 py-2 text-sm font-medium transition-colors duration-200 cursor-pointer whitespace-nowrap !rounded-button ${
+                      location.pathname === '/rag-search'
+                        ? isDarkMode ? 'text-blue-400 border-b-2 border-blue-400' : 'text-blue-600 border-b-2 border-blue-600'
+                        : isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-gray-900'
+                    }`}
+                  >
+                    Knowledge Search
+                  </Link>
                   <Link
                     to="/profile"
                     className={`px-3 py-2 text-sm font-medium transition-colors duration-200 cursor-pointer whitespace-nowrap !rounded-button ${

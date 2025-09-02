@@ -1,0 +1,32 @@
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY rag_blog/ ./rag_blog/
+COPY api_server.py .
+COPY demo_rag_blog.py .
+COPY blog_integration_example.py .
+
+# Create necessary directories
+RUN mkdir -p blog_data/indexes blog_data/generated_posts
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/status || exit 1
+
+# Run the application
+CMD ["python", "api_server.py"]

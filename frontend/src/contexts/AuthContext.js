@@ -16,26 +16,12 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      // Verify token and get user info
-      fetchUserProfile();
-    } else {
-      setLoading(false);
-    }
+    // For RAG-only backend, skip authentication
+    setLoading(false);
+    // Optionally set a mock user for demo purposes
+    // setUser({ username: 'Demo User', id: 1 });
   }, []);
 
-  const fetchUserProfile = async () => {
-    try {
-      const response = await api.get('/auth/profile/');
-      setUser(response.data);
-    } catch (error) {
-      console.error('Failed to fetch user profile:', error);
-      logout();
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const login = async (usernameOrEmail, password) => {
     try {

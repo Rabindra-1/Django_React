@@ -6,7 +6,6 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.db.models import Q, F
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from openai import OpenAI
 from django.conf import settings
 import requests
 import tempfile
@@ -23,9 +22,7 @@ from .serializers import (
     TagSerializer,
     CategorySerializer
 )
-
-# Initialize OpenAI client
-client = OpenAI(api_key=settings.OPENAI_API_KEY) if settings.OPENAI_API_KEY else None
+from ai_generation.ai_service import ai_service
 
 class BlogListCreateView(generics.ListCreateAPIView):
     queryset = Blog.objects.filter(is_published=True)
@@ -122,28 +119,19 @@ def generate_blog_content(request):
     if not prompt:
         return Response({'error': 'Prompt is required'}, status=status.HTTP_400_BAD_REQUEST)
     
-    if not client:
-        return Response({'error': 'OpenAI API key not configured'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
     try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant that writes engaging blog posts. Create well-structured, informative content with a clear introduction, main points, and conclusion."},
-                {"role": "user", "content": f"Write a blog post about: {prompt}"}
-            ],
-            max_tokens=1500,
-            temperature=0.7
-        )
+        # Use AI service with fallback providers
+        blog_prompt = f"Write a blog post about: {prompt}"
+        content = ai_service.generate_text(blog_prompt, max_tokens=1500)
         
-        content = response.choices[0].message.content
         # Generate a title from the first line or create one
         lines = content.split('\n')
         title = lines[0].strip().replace('#', '').strip() if lines else f"Blog about {prompt}"
         
         return Response({
             'title': title,
-            'content': content
+            'content': content,
+            'provider': settings.AI_PROVIDER
         })
     
     except Exception as e:
@@ -176,58 +164,105 @@ def generate_blog_from_video(request):
         return Response({'error': 'Either YouTube URL or video file is required'}, status=status.HTTP_400_BAD_REQUEST)
     
     try:
-        # Initialize Whisper model
-        model = whisper.load_model("base")
         transcript = ""
+        # Note: Whisper processing for uploaded files would require additional setup
         
         if video_file:
-            # Save uploaded file temporarily
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp_file:
-                for chunk in video_file.chunks():
-                    tmp_file.write(chunk)
-                tmp_file_path = tmp_file.name
-            
-            # Transcribe the video file
-            result = model.transcribe(tmp_file_path)
-            transcript = result["text"]
-            
-            # Clean up temporary file
-            os.unlink(tmp_file_path)
+            # Video file processing would require Whisper setup
+            return Response({
+                'error': 'Video file processing requires additional setup. Please use YouTube URLs instead.',
+                'suggestion': 'Try using a YouTube URL for AI-powered blog generation'
+            }, status=status.HTTP_501_NOT_IMPLEMENTED)
         
         elif youtube_url:
-            # For production, you'd want to use youtube-dl or similar
-            # This is a simplified version
-            return Response({'error': 'YouTube URL processing not implemented in this demo. Please upload a video file instead.'}, status=status.HTTP_501_NOT_IMPLEMENTED)
-        
-        if not transcript:
-            return Response({'error': 'Could not extract transcript from video'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Generate blog content from transcript using OpenAI
-        if settings.OPENAI_API_KEY:
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant that converts video transcripts into well-structured blog posts. Create engaging content with proper formatting, headings, and a clear narrative flow."},
-                    {"role": "user", "content": f"Convert this video transcript into a comprehensive blog post:\n\n{transcript}"}
-                ],
-                max_tokens=2000,
-                temperature=0.7
-            )
+            # Process YouTube URL using our AI service
+            from ai_generation.views import extract_youtube_info
             
-            content = response.choices[0].message.content
-            # Extract title from the generated content
-            lines = content.split('\n')
-            title = lines[0].strip().replace('#', '').strip() if lines else "Blog from Video"
-        else:
-            # Fallback if OpenAI is not available
-            title = "Blog from Video Transcript"
-            content = f"# Blog from Video\n\n{transcript}"
-        
-        return Response({
-            'title': title,
-            'content': content,
-            'transcript': transcript
-        })
+            video_info = extract_youtube_info(youtube_url)
+            if not video_info:
+                return Response({'error': 'Could not extract video information from URL'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Create targeted blog content based on video info
+            video_title = video_info.get('title', 'YouTube Video')
+            blog_prompt = f'Write a comprehensive blog post about the YouTube video titled: "{video_title}". Make it engaging with proper formatting, headings, and around 800-1000 words. Include an introduction, key points about the video content, and a conclusion encouraging readers to watch the video.'
+            
+            try:
+                content = ai_service.generate_text(blog_prompt, max_tokens=2000)
+                
+                # Extract title from the generated content with better formatting handling
+                def extract_title_from_content(content, fallback_title):
+                    lines = content.split('\n')
+                    if lines and lines[0].strip():
+                        # Clean up the title - remove markdown formatting, asterisks, quotes
+                        raw_title = lines[0].strip()
+                        title = raw_title.replace('#', '').replace('**', '').replace('*', '').strip()
+                        # Remove surrounding quotes if present
+                        if title.startswith('"') and title.endswith('"'):
+                            title = title[1:-1].strip()
+                        # If title is empty after cleaning, use fallback
+                        return title if title else fallback_title
+                    return fallback_title
+                
+                title = extract_title_from_content(content, video_title)
+                
+                return Response({
+                    'title': title,
+                    'content': content,
+                    'video_info': video_info,
+                    'method': 'AI-generated from YouTube URL'
+                })
+            except Exception as e:
+                # Enhanced fallback content if AI generation fails
+                title = video_title if not video_title.startswith('Video ') else f"Exploring {video_title}"
+                content = f"""# {title}
+
+## Introduction
+
+Today we're diving into an insightful YouTube video titled **"{video_title}"** that offers valuable perspectives worth exploring in depth.
+
+**Video Information:**
+- **Title**: {video_title}
+- **URL**: {youtube_url}
+- **Video ID**: {video_info.get('video_id', 'Unknown')}
+
+## What Makes This Video Special
+
+The video "{video_title}" stands out for several reasons. Based on the title and available information, this content appears to address important topics that resonate with today's audience.
+
+### Key Aspects
+
+**Educational Value**: Videos like this contribute to our understanding of complex topics by breaking them down into accessible content.
+
+**Practical Application**: The insights shared in this video can likely be applied to real-world situations, making it more than just theoretical knowledge.
+
+**Community Impact**: Quality content creators help build informed communities by sharing knowledge and facilitating discussions.
+
+## Why You Should Watch
+
+Here are compelling reasons to check out the full video:
+
+- **Comprehensive Coverage**: The full video provides context that can't be captured in a summary
+- **Visual Learning**: Video content often includes demonstrations, examples, and visual aids
+- **Creator's Perspective**: Get the content directly from the source with the creator's unique insights
+- **Community Discussion**: Join the conversation in the comments section
+
+## Your Next Step
+
+Ready to explore this content? Watch the full video here: {youtube_url}
+
+The video promises to deliver valuable insights about {video_title.lower()}, making it a worthwhile addition to your learning journey.
+
+---
+*Note: This content was generated based on video metadata analysis. The full video contains additional details and context.*
+*AI Service Status: {str(e)}*"""
+                
+                return Response({
+                    'title': title,
+                    'content': content,
+                    'video_info': video_info,
+                    'method': 'Fallback content due to AI error',
+                    'error': str(e)
+                })
     
     except Exception as e:
         return Response({'error': f'Error processing video: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

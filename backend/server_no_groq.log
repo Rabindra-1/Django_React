@@ -1,0 +1,48 @@
+nohup: ignoring input
+/home/rawan/Documents/React_Django/blog_project/backend/main.py:52: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+INFO:     Will watch for changes in these directories: ['/home/rawan/Documents/React_Django/blog_project/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [19644] using StatReload
+Starting RAG Blog Generator API on 0.0.0.0:8000
+INFO:     Started server process [19713]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+Initializing RAG Blog Generator API...
+Warning: Reddit API credentials not found. Reddit retriever will not work.
+Simple RAG System initialized with TF-IDF
+API initialization completed successfully
+INFO:     127.0.0.1:53502 - "GET /health HTTP/1.1" 200 OK
+Generating blog post for topic: 'blockchain technology'
+Insufficient relevant content found. Fetching new documents for: 'blockchain technology'
+Retriever Wikipedia is not available
+Retriever Reddit is not available
+Retrieved 5 documents for query: 'blockchain technology'
+Processed and stored 5 chunks from 5 documents
+Found 0 relevant chunks for query: 'blockchain technology'
+INFO:     127.0.0.1:53508 - "POST /generate-blog HTTP/1.1" 200 OK
+Generating blog post for topic: 'blockchain technology'
+Found 0 relevant chunks for query: 'blockchain technology'
+Insufficient relevant content found. Fetching new documents for: 'blockchain technology'
+Retriever Wikipedia is not available
+Retriever Reddit is not available
+Retrieved 5 documents for query: 'blockchain technology'
+Processed and stored 5 chunks from 5 documents
+Error searching for relevant content: setting an array element with a sequence.
+INFO:     127.0.0.1:33912 - "POST /generate-blog HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53836 - "GET /status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53836 - "GET /status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34010 - "POST /api/auth/login/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:35326 - "POST /api/auth/login/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:35326 - "GET /status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35326 - "POST /api/auth/login/ HTTP/1.1" 404 Not Found
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [19713]
+INFO:     Stopping reloader process [19644]

@@ -290,8 +290,8 @@ const BlogDetailPage = () => {
 
             {/* Content */}
             <div 
-              className={`prose lg:prose-xl max-w-none ${
-                isDarkMode ? 'prose-invert' : ''
+              className={  `prose lg:prose-xl max-w-none text-gray-400 ${
+                isDarkMode ? 'prose-invert text-white ' : 'prose-gray-800 text-gray-900'
               }`}
               dangerouslySetInnerHTML={{ __html: blog.content }}
             />
